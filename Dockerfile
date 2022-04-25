@@ -1,20 +1,20 @@
-FROM greyltc/archlinux-aur:paru
+FROM ubuntu:latest
 
-# All multilib support to download a few more packages
-RUN echo "[multilib]" | tee -a /etc/pacman.conf
-RUN echo "Include = /etc/pacman.d/mirrorlist" | tee -a /etc/pacman.conf
+RUN apt-get -y update && apt-get -y upgrade
 
-# Update everything
-RUN pacman -Syu --noconfirm --needed wine wine-mono
+RUN DEBIAN_FRONTEND=noninteractive apt-get install -y jq curl wget unzip mono-complete
 
-RUN pacman -S --noconfirm --needed jq wget unzip git base-devel
-
-RUN useradd -s /bin/sh -m temp
-
-RUN aur-install proton
-
+# Get the latest version of Nitrox
 RUN wget "$(curl https://api.github.com/repos/SubnauticaNitrox/Nitrox/releases | jq -r ".[0].assets[0].browser_download_url")"
 
 RUN unzip *.zip
 
-CMD wine NitroxServer-Subnautica.exe
+# Some mono configuration from:
+# https://github.com/SubnauticaNitrox/Nitrox/issues/1785
+RUN mkdir -p /root/.mono/registry/CurrentUser/
+COPY values.xml /root/.mono/registry/CurrentUser/
+
+# The port that the server runs on
+EXPOSE 11000
+
+CMD mono NitroxServer-Subnautica.exe
